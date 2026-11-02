@@ -234,6 +234,23 @@ input[type="range"]:disabled{opacity:.35;cursor:not-allowed}
 .kl{font-weight:600}
 .nl{opacity:.75}
 
+/* sound import: a drop zone until a sound is loaded, then overview, spectrum and reconstruction */
+.p-imp{grid-column:1/-1}
+.p-imp.over{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.p-imp .tools select{width:auto}
+.impdrop{display:flex;flex-direction:column;gap:6px;padding:16px 18px;border:1.5px dashed var(--line);border-radius:10px;background:var(--well)}
+.p-imp.over .impdrop{border-color:var(--accent)}
+.impdrop p{margin:0;line-height:1.7;text-wrap:pretty;max-width:80ch}
+.impdrop .lead{font-size:15px}
+.imprec{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.imprec .meter{width:160px;height:10px}
+.impbody{display:flex;flex-direction:column;gap:12px}
+.impgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px}
+@media (max-width:900px){.impgrid{grid-template-columns:minmax(0,1fr)}}
+#cvImpAll{height:100px;touch-action:none;cursor:ew-resize}
+#cvImpSpec,#cvImpRec{height:170px}
+#impStatus:empty{display:none}
+
 /* signal flow */
 .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;color:var(--muted);font-size:12px;padding:2px 2px 0}
 .flow > span{font-family:var(--f-display);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
@@ -556,9 +573,68 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
   <section class="intro v-synth" aria-labelledby="h-studio">
     <span class="eyebrow">STEP 4 / 4</span>
     <h2 id="h-studio">나만의 소리 만들기</h2>
-    <p>배운 것을 모두 써 보세요. 사인의 배율과 레벨로 음색을 정하고(푸리에 합성), 엔벨로프로 소리가 시작하고 사라지는 모양을, EQ로 주파수별 크기를 다듬습니다. 건반을 눌러 들으며 고치면 되고, 만든 소리는 이 브라우저에 자동으로 저장됩니다.</p>
+    <p>배운 것을 모두 써 보세요. 사인의 배율과 레벨로 음색을 정하고(푸리에 합성), 엔벨로프로 소리가 시작하고 사라지는 모양을, EQ로 주파수별 크기를 다듬습니다. 녹음하거나 파일로 넣은 소리를 푸리에 변환해 사인으로 바꾼 뒤, 그 소리에서 시작해도 됩니다. 건반을 눌러 들으며 고치면 되고, 만든 소리는 이 브라우저에 자동으로 저장됩니다.</p>
   </section>
 
+
+  <section class="panel p-imp v-synth" id="import" aria-labelledby="h-imp">
+    <div class="ph">
+      <h2 id="h-imp">Sound Import <span>내 소리를 사인으로 바꿔 건반으로 연주하기</span></h2>
+      <div class="tools">
+        <button id="impFile" class="btn" type="button">파일 열기</button>
+        <button id="impRec" class="btn" type="button" aria-pressed="false">녹음하기</button>
+        <select id="impDemo" aria-label="예시 소리 고르기">
+          <option value="" selected>예시 소리…</option>
+          <option value="pluck">튕긴 기타 줄</option>
+          <option value="voice">목소리 ‘아’</option>
+          <option value="bell">종</option>
+        </select>
+        <input id="impInput" type="file" accept="audio/*,.wav,.mp3,.m4a,.aac,.ogg,.flac" hidden>
+      </div>
+    </div>
+    <div class="imprec" id="impRecBar" hidden>
+      <div class="meter" aria-hidden="true"><i id="impLevel"></i></div>
+      <output id="impRecTime">0.0 s</output>
+      <span class="hint">한 음을 길게 내 보세요. 6초가 되면 저절로 멈춥니다.</span>
+    </div>
+    <div class="impdrop" id="impDrop">
+      <p class="lead">오디오 파일을 여기에 끌어 놓거나, 녹음하거나, 예시 소리를 골라 보세요.</p>
+      <p>악기나 목소리로 <b>한 음을 1~3초 길게</b> 낸 소리가 잘 됩니다. 푸리에 변환으로 소리 속 사인들을 찾고, 찾은 사인을 다시 더해(푸리에 역변환) 건반으로 연주할 수 있는 소리로 만듭니다.</p>
+      <p class="note">소리는 이 브라우저 안에서만 처리되고 어디에도 올라가지 않습니다.</p>
+    </div>
+    <div class="impbody" id="impBody" hidden>
+      <div class="pblock">
+        <div class="plab"><b>① 소리 전체 · 분석 구간</b><span id="impMeta"></span></div>
+        <canvas id="cvImpAll" class="screen" role="img" aria-label="불러온 소리의 전체 파형, 분석 구간과 찾아낸 엔벨로프"></canvas>
+        <label class="knob" for="impPos"><span class="kt"><span>분석 구간 위치 · 그래프를 끌어도 됩니다</span><output id="impPosOut"></output></span><input id="impPos" type="range" min="0" max="1000" step="1" value="0"></label>
+      </div>
+      <div class="impgrid">
+        <div class="pblock">
+          <div class="plab"><b>② 푸리에 변환 · 스펙트럼</b><span id="impPitch"></span></div>
+          <canvas id="cvImpSpec" class="screen" role="img" aria-label="분석 구간의 스펙트럼과 찾아낸 사인들"></canvas>
+          <p class="hint" id="impList"></p>
+        </div>
+        <div class="pblock">
+          <div class="plab"><b>③ 푸리에 역변환 · 사인 다시 더하기</b><span>흰 선 원래 소리 · 초록 점선 사인의 합</span></div>
+          <canvas id="cvImpRec" class="screen" role="img" aria-label="원래 파형과 찾은 사인을 더한 파형 비교"></canvas>
+          <label class="knob" for="impN"><span class="kt"><span>다시 더할 사인 개수 (센 것부터)</span><output id="impNOut"></output></span><input id="impN" type="range" min="1" max="16" step="1" value="16"></label>
+        </div>
+      </div>
+      <div class="detread" aria-live="polite">
+        <div class="dv"><output id="impMatch">0%</output><span class="hint">파형 일치도</span></div>
+        <p class="mfb" id="impSay"></p>
+      </div>
+      <div class="labactions">
+        <button id="impPlayOrig" class="btn" type="button">원래 소리 듣기</button>
+        <button id="impPlaySyn" class="btn" type="button">다시 합성한 소리 듣기</button>
+        <button id="impSnap" class="btn" type="button" aria-pressed="true">정수배로 맞추기</button>
+        <button id="impEnv" class="btn" type="button" aria-pressed="true">엔벨로프도 가져오기</button>
+        <button id="impApply" class="btn primary" type="button">건반에 올리기</button>
+        <button id="impUndo" class="btn" type="button" hidden>되돌리기</button>
+      </div>
+    </div>
+    <p class="hint" id="impStatus" aria-live="polite"></p>
+  </section>
 
   <section class="panel p-gen" aria-labelledby="h-gen">
     <div class="ph">
@@ -917,7 +993,7 @@ const screenColor = (i) => `hsl(${hueOf(i)} 80% 68%)`;
 
 const state = { preset: 'saw', partials: [], envs: null, eq: DEFAULT_EQ(), eqBypass: false, band: 3, envTab: 'A', master: 80, octave: 4, hold: false };
 const lab = { shape: 'square', N: 5, phases: null, drone: false, demo: 0, demoEnd: 0 };
-const dirty = { wave: true, harm: true, env: true, eq: true, resp: true, scope: true, lab: true, stem: true, cards: true, td: true, fd: true, det: true, scan: true };
+const dirty = { wave: true, harm: true, env: true, eq: true, resp: true, scope: true, lab: true, stem: true, cards: true, td: true, fd: true, det: true, scan: true, impAll: true, impSpec: true, impRec: true };
 const markAllDirty = () => { for (const k in dirty) dirty[k] = true; };
 let view = 'learn';
 
@@ -2354,7 +2430,7 @@ function startDemo() {
   demoBtn.setAttribute('aria-pressed', 'true'); demoBtn.textContent = '쌓기 멈추기';
 }
 // panic() has already released every voice; this resets the lesson buttons that were holding one
-function quietLessons() { for (const t of tones) t.v = null; stopDemo(); setDroneUI(false); setListenUI(false); }
+function quietLessons() { for (const t of tones) t.v = null; stopDemo(); setDroneUI(false); setListenUI(false); stopImpAudio(); }
 
 wcards.forEach(el => {
   el.querySelector('.wsel').addEventListener('click', () => setShape(el.dataset.shape));
@@ -2716,13 +2792,596 @@ $('#misClear').addEventListener('click', (e) => {
   progress = {}; saveProgress(); renderMissionList(); dirty.harm = true;
 });
 
+/* ---------- step 4: sound import ---------- */
+// Step 1's idea on real sound. YIN finds the pitch of one short window, a zero-phase Blackman–Harris FFT of that
+// window finds the strongest sine peaks (frequency, size, phase at the window centre), and the loudness curve of
+// the whole note gives an ADSR. The peaks become generator rows, so the keyboard plays the rebuilt sound.
+const IMP_MAX_S = 12, IMP_WIN_S = .2, IMP_REC_S = 6, IMP_DB = 72;
+const imp = { x: null, sr: 48000, name: '', ab: null, cols: null, env: null, hop: 1, i0: 0, ip: 0, P: 1, fit: null,
+  L: 0, c: 0, mean: 0, need: false, spec: null, df: 1, top: 1, f0: 440, periodic: false, peaks: [], autoN: true, N: MAX_P,
+  snap: true, takeEnv: true, parts: [], amax: 1, recO: null, recY: null, match: 0,
+  src: null, srcGain: null, srcT0: 0, rec: null, asking: false, undo: null, tone: makeTone(), toneTimer: 0, drag: false };
+const impPanel = $('.p-imp'), impDrop = $('#impDrop'), impBody = $('#impBody'), impInput = $('#impInput'), impStatus = $('#impStatus');
+const cvImpAll = $('#cvImpAll'), cvImpSpec = $('#cvImpSpec'), cvImpRec = $('#cvImpRec');
+const impPos = $('#impPos'), impPosOut = $('#impPosOut'), impN = $('#impN'), impNOut = $('#impNOut'), impDemo = $('#impDemo');
+const impRecBtn = $('#impRec'), impRecBar = $('#impRecBar'), impLevel = $('#impLevel'), impRecTime = $('#impRecTime');
+const impSnapBtn = $('#impSnap'), impEnvBtn = $('#impEnv'), impUndoBtn = $('#impUndo');
+const impNote = (t) => { impStatus.textContent = t; };
+const pow2 = (n) => 1 << Math.ceil(Math.log2(n));
+
+// in-place radix-2 FFT, X[k] = Σ x[n]·e^(−i2πkn/N)
+const twiddles = new Map();
+function fft(re, im) {
+  const n = re.length;
+  let tw = twiddles.get(n);
+  if (!tw) {
+    tw = { c: new Float64Array(n >> 1), s: new Float64Array(n >> 1) };
+    for (let i = 0; i < n >> 1; i++) { tw.c[i] = Math.cos(TAU * i / n); tw.s[i] = -Math.sin(TAU * i / n); }
+    twiddles.set(n, tw);
+  }
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) { let t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const half = len >> 1, step = n / len;
+    for (let i = 0; i < n; i += len) {
+      for (let k = 0; k < half; k++) {
+        const wr = tw.c[k * step], wi = tw.s[k * step], a = i + k, b = a + half;
+        const tr = re[b] * wr - im[b] * wi, ti = re[b] * wi + im[b] * wr;
+        re[b] = re[a] - tr; im[b] = im[a] - ti; re[a] += tr; im[a] += ti;
+      }
+    }
+  }
+}
+// YIN: the first lag whose cumulative-mean-normalised difference dips under 0.15 is one period
+function yin(x, sr) {
+  const tMin = Math.max(2, Math.floor(sr / 2500)), tMax = Math.min(Math.ceil(sr / 50), (x.length >> 1) - 1), W = x.length - tMax - 1;
+  const dn = new Float64Array(tMax + 2);
+  dn[0] = 1;
+  let run = 0;
+  for (let t = 1; t <= tMax + 1; t++) {
+    let s = 0;
+    for (let j = 0; j < W; j++) { const v = x[j] - x[j + t]; s += v * v; }
+    run += s; dn[t] = run > 0 ? s * t / run : 1;
+  }
+  let best = -1;
+  for (let t = tMin; t <= tMax; t++) if (dn[t] < .15) { while (t < tMax && dn[t + 1] < dn[t]) t++; best = t; break; }
+  if (best < 0) { let m = Infinity; for (let t = tMin; t <= tMax; t++) if (dn[t] < m) { m = dn[t]; best = t; } }
+  const a = dn[best - 1], b = dn[best], c = dn[best + 1], den = a - 2 * b + c;
+  return { f0: sr / (den > 0 ? best + .5 * (a - c) / den : best), ap: b };
+}
+
+// example notes from models that never add sines, so the analysis has real work to do
+const DEMOS = { pluck: '튕긴 기타 줄', voice: '목소리 ‘아’', bell: '종' };
+function demoSound(kind, sr) {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2147483648 - 1; };
+  if (kind === 'pluck') {
+    // Karplus–Strong: a burst of noise circulating in a delay line, smoothed a little on every pass (period N − ½)
+    const N = Math.round(sr / 196 + .5), len = Math.round(sr * 2.6), line = new Float32Array(N), out = new Float32Array(len);
+    let lp = 0;
+    for (let i = 0; i < N; i++) { lp += .5 * (rnd() - lp); line[i] = lp; }
+    for (let i = 0, p = 0; i < len; i++, p = (p + 1) % N) { const a = line[p]; out[i] = a; line[p] = .4985 * (a + line[(p + 1) % N]); }
+    return out;
+  }
+  if (kind === 'voice') {
+    // a buzzing source (band-limited sawtooth with vibrato) through three resonances of the vowel 'a'
+    const len = Math.round(sr * 2.2), out = new Float32Array(len);
+    const F = [[730, 90, 1], [1090, 110, .55], [2440, 160, .3]].map(([f, bw, g]) => {
+      const r = Math.exp(-Math.PI * bw / sr);
+      return { a1: 2 * r * Math.cos(TAU * f / sr), a2: -r * r, g: g * (1 - r), y1: 0, y2: 0 };
+    });
+    let ph = 0;
+    for (let i = 0; i < len; i++) {
+      const t = i / sr, dp = 165 * (1 + .006 * Math.sin(TAU * 5.2 * t)) / sr;
+      ph += dp; if (ph >= 1) ph -= 1;
+      let s = 2 * ph - 1;
+      if (ph < dp) { const u = ph / dp; s -= u + u - u * u - 1; } else if (ph > 1 - dp) { const u = (ph - 1) / dp; s -= u * u + u + u + 1; }
+      let y = 0;
+      for (const r of F) { const v = r.g * s + r.a1 * r.y1 + r.a2 * r.y2; r.y2 = r.y1; r.y1 = v; y += v; }
+      out[i] = y * Math.min(1, t / .08, (2.2 - t) / .2);
+    }
+    return out;
+  }
+  // bell: struck modes, each with its own decay; the ratios are a church bell's, not whole numbers
+  const len = Math.round(sr * 3.5), out = new Float32Array(len), strike = Math.round(sr * .002);
+  const modes = [[.5, .55, 1.8], [1, 1, 1.3], [1.19, .6, 1.1], [1.5, .35, .8], [2, .7, .7], [2.51, .3, .45], [2.66, .35, .4], [3.01, .22, .3], [4.1, .18, .22], [5.4, .1, .15]];
+  for (const [r, a, tau] of modes) {
+    const w = TAU * 330 * r / sr, ph = (rnd() + 1) * Math.PI;
+    for (let i = 0; i < len; i++) out[i] += a * Math.exp(-i / sr / tau) * Math.sin(w * i + ph);
+  }
+  for (let i = 0; i < strike; i++) out[i] *= i / strike;
+  return out;
+}
+
+/* loading */
+function loadSamples(data, sr, name) {
+  let peak = 0;
+  for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+  if (peak < 1e-4) { impNote('소리가 거의 들리지 않습니다. 더 크게 녹음하거나 다른 파일을 골라 보세요.'); return; }
+  let a = 0, b = data.length - 1;
+  while (a < b && Math.abs(data[a]) < .02 * peak) a++;
+  while (b > a && Math.abs(data[b]) < .01 * peak) b--;
+  a = Math.max(0, a - Math.round(sr * .02)); b = Math.min(data.length, b + Math.round(sr * .05));
+  const cut = b - a > IMP_MAX_S * sr;
+  if (cut) b = a + IMP_MAX_S * sr;
+  if (b - a < sr * .1) { impNote('소리가 너무 짧습니다. 0.1초보다 길게 내 보세요.'); return; }
+  const x = new Float32Array(b - a);
+  for (let i = 0; i < x.length; i++) x[i] = data[a + i] / peak;
+  stopImpAudio();
+  Object.assign(imp, { x, sr, name, ab: null, cols: null, spec: null, autoN: true });
+  const L = Math.min(2 * Math.round(sr * IMP_WIN_S / 2) + 1, x.length - 2);
+  imp.L = L % 2 ? L : L - 1;
+  fitEnvelope();
+  const dt = imp.hop / sr, f = imp.fit;
+  // held notes are read in the middle; plucked or struck ones just after the peak, while every partial still rings
+  const frame = f.s > 0 ? (imp.ip + f.relAt) / 2 : imp.ip + .12 / dt;
+  setCenter(frame * imp.hop + imp.hop / 2);
+  analyze();
+  impDrop.hidden = true; impBody.hidden = false;
+  $('#impMeta').textContent = `${name} · ${(x.length / sr).toFixed(1)}초 · 주황 상자가 분석 구간, 파란 점선이 찾아낸 엔벨로프`;
+  impNote(cut ? `앞 ${IMP_MAX_S}초만 분석합니다.` : '');
+  dirty.impAll = true;
+}
+function toMono(ab) {
+  const n = ab.length, k = ab.numberOfChannels, out = new Float32Array(n);
+  for (let ch = 0; ch < k; ch++) { const d = ab.getChannelData(ch); for (let i = 0; i < n; i++) out[i] += d[i] / k; }
+  return out;
+}
+async function loadFile(file) {
+  if (!file) return;
+  impNote(`${file.name} 여는 중…`);
+  try {
+    const buf = await file.arrayBuffer();
+    const dc = ctx || new OfflineAudioContext(1, 1, 48000);
+    const ab = await dc.decodeAudioData(buf);
+    loadSamples(toMono(ab), ab.sampleRate, file.name);
+  } catch (_) {
+    impNote(`${file.name}은(는) 열 수 없습니다. WAV, MP3, M4A 같은 오디오 파일을 골라 주세요.`);
+  }
+}
+
+/* envelope: 10 ms loudness frames, then attack / decay / sustain / release read off that curve */
+function fitEnvelope() {
+  const { x, sr } = imp, hop = Math.max(1, Math.round(sr * .01)), n = Math.max(1, Math.floor(x.length / hop)), e = new Float32Array(n);
+  for (let i = 0; i < n; i++) { let s = 0; for (let j = i * hop; j < (i + 1) * hop; j++) s += x[j] * x[j]; e[i] = Math.sqrt(s / hop); }
+  const dt = hop / sr;
+  // the attack ends where the level first comes within 1 dB of its loudest, so a wobbling held note still has a short attack
+  let top = 0, ip = 0;
+  for (let i = 0; i < n; i++) top = Math.max(top, e[i]);
+  while (ip < n - 1 && e[ip] < .89 * top) ip++;
+  const P = top || 1, dB = (i) => 20 * Math.log10(e[i] / P + 1e-6);
+  let i0 = 0, i1 = n - 1;
+  while (i0 < ip && e[i0] < .1 * P) i0++;
+  while (i1 > ip && e[i1] < .03 * P) i1--;
+  const a = round3(clamp((ip - i0) * dt, .003, ENV_MAX.a));
+  // a straight line through the level after the peak: a steady fall is a plucked or struck note, a flat stretch a held one
+  const b0 = ip + Math.round((i1 - ip) * .1), b1 = ip + Math.round((i1 - ip) * .85);
+  let slope = 0;
+  if (b1 - b0 >= 4) {
+    let st = 0, sl = 0, stt = 0, stl = 0, m = 0;
+    for (let i = b0; i <= b1; i++) { const t = i * dt, l = dB(i); st += t; sl += l; stt += t * t; stl += t * l; m++; }
+    slope = (m * stl - st * sl) / (m * stt - st * st);
+  }
+  let fit;
+  if (slope < -6 || i1 - ip < 4) {
+    // envValue falls as e^(−4t/d), which is 34.7/d dB per second
+    const d = round3(clamp(slope < -1 ? 34.74 / -slope : (i1 - ip) * dt * 1.5, .05, ENV_MAX.d));
+    fit = { a, d, s: 0, r: round3(clamp(d * .4, .08, 3)), relAt: i1 };
+  } else {
+    const mids = [];
+    for (let i = ip + Math.round((i1 - ip) * .3); i <= ip + Math.round((i1 - ip) * .8); i++) mids.push(dB(i));
+    mids.sort((p, q) => p - q);
+    const Ls = mids[mids.length >> 1], s = clamp(Math.round(Math.pow(10, Ls / 20) * 100) / 100, .05, 1);
+    let i = ip;
+    while (i < i1 && dB(i) > Ls + 1) i++;
+    // time to come within 1 dB of the sustain level, turned into envValue's decay time
+    const arg = .122 * s / (1 - s);
+    const d = round3(s > .97 || arg >= 1 ? .05 : clamp(-4 * (i - ip) * dt / Math.log(arg), .02, ENV_MAX.d));
+    let i2 = i1;
+    while (i2 > ip && dB(i2) < Ls - 3) i2--;
+    // releaseVoice falls with time constant r/5, which is 43.4/r dB per second
+    const r = round3(clamp(43.4 * (i1 - i2) * dt / Math.max(6, 27 + Ls), .06, ENV_MAX.r));
+    fit = { a, d, s, r, relAt: i2 };
+  }
+  Object.assign(imp, { env: e, hop, i0, ip, P, fit });
+}
+const fitEnv = () => { const { a, d, s, r } = imp.fit; return { a, d, s, r }; };
+const fitHold = () => (imp.fit.relAt - imp.i0) * imp.hop / imp.sr;
+// the fitted ADSR, t seconds after the onset, relative to the loudest frame
+function fitValue(t) {
+  const f = imp.fit, tr = fitHold();
+  const body = (u) => u < f.a ? u / f.a : f.s + (1 - f.s) * Math.exp(-(u - f.a) / (f.d / 4));
+  if (t < 0) return 0;
+  if (f.s === 0 || t <= tr) return body(t);
+  return body(tr) * Math.exp(-(t - tr) / (f.r / 5));
+}
+
+/* analysis window */
+function setCenter(s, fromSlider) {
+  const h = (imp.L - 1) >> 1, span = Math.max(0, imp.x.length - 1 - 2 * h);
+  s = clamp(Math.round(s), h, h + span);
+  if (s === imp.c && imp.spec) return;
+  imp.c = s; imp.need = true; dirty.impAll = true;
+  if (!fromSlider) { impPos.value = span ? Math.round((s - h) / span * 1000) : 0; paintRange(impPos); }
+  impPos.disabled = !span;
+  impPosOut.textContent = `${((s - h) / imp.sr).toFixed(2)}–${((s + h) / imp.sr).toFixed(2)} s`;
+}
+function analyze() {
+  imp.need = false;
+  const { x, sr, L } = imp, h = (L - 1) >> 1, seg = x.subarray(imp.c - h, imp.c + h + 1);
+  let mean = 0;
+  for (let n = 0; n < L; n++) mean += seg[n];
+  mean /= L;
+  // zero-phase window: the centre sample goes to index 0, so each bin's angle is the phase at the window centre
+  const M = pow2(L * 4), re = new Float64Array(M), im = new Float64Array(M);
+  let wsum = 0;
+  for (let n = 0; n < L; n++) {
+    const u = TAU * n / (L - 1), w = .35875 - .48829 * Math.cos(u) + .14128 * Math.cos(2 * u) - .01168 * Math.cos(3 * u);
+    wsum += w; re[(n - h + M) % M] = (seg[n] - mean) * w;
+  }
+  fft(re, im);
+  const half = M >> 1, df = sr / M, mag = new Float64Array(half), kLo = Math.ceil(30 / df);
+  let top = 1e-12;
+  for (let k = 0; k < half; k++) { mag[k] = Math.hypot(re[k], im[k]) * 2 / wsum; if (k >= kLo && mag[k] > top) top = mag[k]; }
+  const spec = new Float32Array(half);
+  for (let k = 0; k < half; k++) spec[k] = 20 * Math.log10(mag[k] / top + 1e-9);
+  // every local maximum, refined by a parabola through the log magnitudes around it
+  const cand = [], kHi = Math.min(half - 2, Math.floor(Math.min(sr * .45, 16000) / df)), floor = top * Math.pow(10, -IMP_DB / 20);
+  for (let k = kLo; k <= kHi; k++) {
+    const b = mag[k];
+    if (b < floor || b < mag[k - 1] || b <= mag[k + 1]) continue;
+    const la = Math.log(mag[k - 1] + 1e-12), lb = Math.log(b), lc = Math.log(mag[k + 1] + 1e-12), den = la - 2 * lb + lc;
+    const p = den < 0 ? clamp(.5 * (la - lc) / den, -.5, .5) : 0;
+    cand.push({ f: (k + p) * df, amp: Math.exp(lb - .25 * (la - lc) * p), th: Math.atan2(im[k], re[k]) });
+  }
+  cand.sort((p, q) => q.amp - p.amp);
+  const pick = (sep) => { const out = []; for (const c of cand) { if (out.length >= 40) break; if (out.every(o => Math.abs(o.f - c.f) >= sep)) out.push(c); } return out; };
+  const y = yin(seg, sr);
+  let f0 = y.f0, periodic = y.ap < .3 && f0 >= 50 && f0 <= 2500;
+  let peaks = pick(periodic ? Math.max(.4 * f0, 25) : 25);
+  if (periodic && peaks.length) {
+    // YIN can lock onto twice the real pitch; energy at odd multiples of f0/2 gives that away
+    let odd = 0, all = 0;
+    for (const p of peaks) { const r = 2 * p.f / f0, k = Math.round(r); all += p.amp; if (k % 2 && Math.abs(r - k) < .06 * k) odd += p.amp; }
+    if (odd > .2 * all && f0 / 2 >= 50) { f0 /= 2; peaks = pick(Math.max(.4 * f0, 25)); }
+    // a bell can share a long common period with no real harmonic series under it: most multiples below its
+    // loudest sine are empty. Such a sound is measured from its loudest sine instead.
+    const kTop = Math.round(peaks[0].f / f0), has = new Set();
+    for (const p of peaks) { const k = Math.round(p.f / f0); if (k >= 1 && k <= kTop && p.amp > top * .01 && Math.abs(p.f / (k * f0) - 1) < .03) has.add(k); }
+    if (kTop >= 3 && has.size < kTop / 2) { periodic = false; peaks = pick(25); }
+  }
+  if (periodic) {
+    // the harmonics pin the pitch down more finely than the period does
+    let sn = 0, sd = 0;
+    for (const p of peaks) { const k = Math.round(p.f / f0); if (k >= 1 && k <= 24 && Math.abs(p.f / (k * f0) - 1) < .03) { sn += p.amp * p.f / k; sd += p.amp; } }
+    if (sd > 0) f0 = sn / sd;
+  } else if (peaks.length) f0 = peaks[0].f;
+  Object.assign(imp, { mean, spec, df, top, f0, periodic, peaks });
+  impSnapBtn.disabled = !periodic;
+  if (imp.autoN) { imp.autoN = false; imp.N = clamp(peaks.filter(p => p.amp > top * .003).length, 1, MAX_P); }
+  impN.max = Math.max(1, Math.min(MAX_P, peaks.length));
+  impN.value = imp.N = clamp(imp.N, 1, +impN.max);
+  paintRange(impN);
+  derive();
+}
+// the loudest N peaks -> generator rows (ratio to the pitch, level, phase), then the inverse transform over three periods
+function derive() {
+  const top = imp.peaks.slice(0, imp.N), amax = top.length ? top[0].amp : 1, parts = [];
+  for (const p of top) {
+    let r = p.f / imp.f0;
+    const k = Math.round(r), snapped = imp.snap && imp.periodic && k >= 1 && Math.abs(r / k - 1) < .03;
+    r = snapped ? k : Math.round(r * 1000) / 1000;
+    if (r < .01 || r > 64 || (snapped && parts.some(q => q.r === r))) continue;
+    const deg = (((p.th + Math.PI / 2) * 180 / Math.PI) % 360 + 360) % 360;
+    parts.push({ r, lv: Math.max(.001, Math.round(p.amp / amax * 1000) / 1000), ph: Math.round(deg / 5) * 5 % 360, f: p.f, amp: p.amp });
+  }
+  parts.sort((p, q) => p.r - q.r);
+  const S = Math.round((imp.periodic ? 3 / imp.f0 : .02) * imp.sr), half = Math.min(S >> 1, (imp.L - 1) >> 1);
+  const o = new Float32Array(2 * half + 1), y = new Float32Array(2 * half + 1);
+  let oy = 0, yy = 0;
+  for (let n = -half; n <= half; n++) {
+    const t = n / imp.sr, ov = imp.x[imp.c + n] - imp.mean;
+    let v = 0;
+    for (const q of parts) v += q.lv * amax * Math.sin(TAU * q.r * imp.f0 * t + q.ph * Math.PI / 180);
+    o[n + half] = ov; y[n + half] = v; oy += ov * v; yy += v * v;
+  }
+  // the sizes are averaged over the whole window while the note gets louder or softer inside it; one overall gain
+  // (the envelope's job when it plays) is fitted first, so the score is about the shape of the wave
+  const g = yy > 0 ? clamp(oy / yy, .25, 4) : 1;
+  let err = 0, pw = 0;
+  for (let i = 0; i < y.length; i++) { y[i] *= g; err += (o[i] - y[i]) * (o[i] - y[i]); pw += o[i] * o[i]; }
+  Object.assign(imp, { parts, amax, recO: o, recY: y, match: pw > 0 ? Math.max(0, 1 - err / pw) : 0 });
+  dirty.impSpec = dirty.impRec = true;
+  const n = parts.length, pct = Math.round(imp.match * 100), m = 69 + 12 * Math.log2(imp.f0 / 440), key = Math.round(m);
+  impNOut.textContent = `${n}개`;
+  $('#impPitch').textContent = imp.periodic
+    ? `기본음 ${imp.f0.toFixed(1)} Hz · ${noteName(key)} ${fmtCents(Math.round((m - key) * 100))}`
+    : `배음이 정수배로 늘어서지 않아 가장 센 ${fmtFreq(imp.f0)}를 배율 1로`;
+  $('#impList').textContent = `찾은 사인 (배율 · 세기): ${parts.map(q => `${fmtRatio(q.r)} · ${fmtLevel(q.lv)}`).join(', ')}`;
+  $('#impMatch').textContent = `${pct}%`;
+  $('#impSay').textContent = pct >= 90
+    ? `가장 센 사인 ${n}개를 다시 더했더니 원래 파형의 ${pct}%가 돌아왔어요. 이 사인들을 건반에 올리면 어떤 음높이로든 연주할 수 있습니다.`
+    : pct >= 60
+      ? `사인 ${n}개로 원래 파형의 ${pct}%를 되살렸어요. ${n < +impN.max ? '사인 개수를 늘리면 더 비슷해집니다.' : '분석 구간을 옮겨 보거나, 귀로 비교해 보세요. 위상이 조금 어긋나도 소리는 거의 같게 들립니다.'}`
+      : `${pct}%만 되살렸어요. 음높이가 흔들리거나 잡음이 많은 소리는 사인 몇 개로 담기 어렵습니다. 소리가 고르게 이어지는 곳으로 분석 구간을 옮겨 보세요.`;
+}
+
+/* drawing */
+function drawImpAll() {
+  dirty.impAll = false;
+  const { c, W, H } = setupCanvas(cvImpAll), mid = H / 2, x = imp.x, n = x.length, sr = imp.sr, cols = Math.max(1, Math.round(W));
+  c.fillStyle = TH.screen; c.fillRect(0, 0, W, H);
+  if (!imp.cols || imp.cols.n !== cols) {
+    const lo = new Float32Array(cols), hi = new Float32Array(cols);
+    for (let i = 0; i < cols; i++) {
+      const a = Math.floor(i * n / cols), b = Math.max(a + 1, Math.floor((i + 1) * n / cols));
+      let mn = 0, mx = 0;
+      for (let j = a; j < b; j++) { const v = x[j]; if (v < mn) mn = v; if (v > mx) mx = v; }
+      lo[i] = mn; hi[i] = mx;
+    }
+    imp.cols = { n: cols, lo, hi };
+  }
+  const sc = mid * .88, X = (s) => s / n * W, h = (imp.L - 1) >> 1, bx = X(imp.c - h), bw = Math.max(3, X(imp.c + h) - bx);
+  c.fillStyle = TH.envB; c.globalAlpha = .18; c.fillRect(bx, 0, bw, H); c.globalAlpha = 1;
+  c.lineWidth = 1; c.strokeStyle = TH.line2; hline(c, 0, W, mid);
+  c.fillStyle = TH.trace; c.globalAlpha = .65;
+  for (let i = 0; i < cols; i++) { const y0 = mid - imp.cols.hi[i] * sc; c.fillRect(i, y0, 1, Math.max(1, mid - imp.cols.lo[i] * sc - y0)); }
+  c.globalAlpha = 1;
+  c.strokeStyle = TH.envB; c.lineWidth = 1.5; c.strokeRect(bx + .75, .75, bw - 1.5, H - 1.5);
+  // the fitted envelope, scaled from loudness (RMS) up to amplitude
+  const k = imp.P * Math.SQRT2 * sc, s0 = imp.i0 * imp.hop;
+  c.strokeStyle = TH.envA; c.lineWidth = 1.6; c.setLineDash([5, 4]); c.globalAlpha = imp.takeEnv ? 1 : .35;
+  for (const sgn of [1, -1]) {
+    c.beginPath();
+    for (let px = 0; px <= W; px += 2) { const py = mid - sgn * Math.min(fitValue((px / W * n - s0) / sr) * k, mid - 1); px ? c.lineTo(px, py) : c.moveTo(px, py); }
+    c.stroke();
+  }
+  c.setLineDash([]); c.globalAlpha = 1;
+  const f = imp.fit;
+  c.font = `600 11px ${TH.body}`;
+  chip(c, `엔벨로프  A ${fmtTime(f.a)} · D ${fmtTime(f.d)} · S ${Math.round(f.s * 100)}% · R ${fmtTime(f.r)}`, 8, 15, TH.envA);
+  const dur = n / sr, step = dur > 8 ? 2 : dur > 4 ? 1 : .5, roomy = W / (dur / step) >= 40;
+  c.font = `10px ${TH.mono}`;
+  for (let t = step; t < dur - step * .3; t += step) {
+    const px = t / dur * W;
+    c.fillStyle = TH.dim; c.fillRect(Math.round(px), H - 4, 1, 4);
+    if (roomy) chip(c, `${+t.toFixed(1)}s`, px + 4, H - 6, TH.dim);
+  }
+  if (imp.src && ctx) { c.strokeStyle = TH.good; c.lineWidth = 2; vline(c, (ctx.currentTime - imp.srcT0) * sr / n * W, 0, H); }
+}
+function drawImpSpec() {
+  dirty.impSpec = false;
+  const { c, W, H } = setupCanvas(cvImpSpec), L = 34, R = 10, Tp = 22, B = 20, w = W - L - R, h = H - Tp - B;
+  c.fillStyle = TH.screen; c.fillRect(0, 0, W, H);
+  const hiF = imp.parts.reduce((m, q) => Math.max(m, q.f), 0), fMax = clamp(hiF * 1.12, 800, imp.sr / 2);
+  const X = (f) => L + f / fMax * w, Y = (db) => Tp + clamp(-db / IMP_DB, 0, 1) * h;
+  c.lineWidth = 1; c.strokeStyle = TH.line;
+  hline(c, L, L + w, Y(-24)); hline(c, L, L + w, Y(-48));
+  c.strokeStyle = TH.line2; hline(c, L, L + w, Y(-IMP_DB));
+  if (imp.periodic && imp.f0 / fMax * w >= 7) {
+    c.strokeStyle = TH.line; c.setLineDash([2, 4]);
+    for (let k = 1; k * imp.f0 < fMax; k++) vline(c, X(k * imp.f0), Tp, Tp + h);
+    c.setLineDash([]);
+  }
+  c.font = `10px ${TH.mono}`; c.fillStyle = TH.dim; c.textAlign = 'right';
+  c.fillText('0', L - 6, Y(0) + 3); c.fillText('−24', L - 6, Y(-24) + 3); c.fillText('−48', L - 6, Y(-48) + 3);
+  c.fillText('dB', L - 6, Y(-IMP_DB) + 3); c.fillText('Hz', L - 6, H - 6); c.fillText('배율', L - 6, 13);
+  const step = [100, 200, 500, 1000, 2000, 5000].find(s => fMax / s <= 8) || 5000;
+  c.textAlign = 'center';
+  for (let f = step; f < fMax * .97; f += step) c.fillText(f >= 1000 ? `${f / 1000}k` : String(f), X(f), H - 6);
+  // the loudest bin under each pixel
+  const sp = imp.spec, pts = [];
+  for (let px = 0; px <= w; px++) {
+    const k0 = Math.floor(px / w * fMax / imp.df), k1 = Math.max(k0 + 1, Math.floor((px + 1) / w * fMax / imp.df));
+    let m = -200;
+    for (let k = k0; k < k1 && k < sp.length; k++) if (sp[k] > m) m = sp[k];
+    pts.push(Y(m));
+  }
+  c.beginPath(); c.moveTo(L, Y(-IMP_DB));
+  pts.forEach((py, px) => c.lineTo(L + px, py));
+  c.lineTo(L + w, Y(-IMP_DB)); c.closePath();
+  c.fillStyle = TH.envA; c.globalAlpha = .16; c.fill(); c.globalAlpha = 1;
+  c.beginPath(); pts.forEach((py, px) => px ? c.lineTo(L + px, py) : c.moveTo(L + px, py));
+  c.strokeStyle = TH.envA; c.lineWidth = 1.2; c.lineJoin = 'round'; c.stroke();
+  // found sines, coloured like their generator rows; ratio labels along the top
+  c.font = `600 10px ${TH.mono}`;
+  let lastX = -99;
+  imp.parts.forEach((q, i) => {
+    const x = X(q.f), y = Y(20 * Math.log10(q.amp / imp.top)), col = screenColor(i);
+    c.strokeStyle = col; c.lineWidth = 2; vline(c, x, y, Tp + h);
+    c.fillStyle = col; c.beginPath(); c.arc(x, y, 3.2, 0, TAU); c.fill();
+    const lab = fmtRatio(q.r), lw = c.measureText(lab).width;
+    if (x - lw / 2 > lastX + 3) { c.fillText(lab, x, 13); lastX = x + lw / 2; }
+  });
+}
+function drawImpRec() {
+  dirty.impRec = false;
+  const { c, W, H } = setupCanvas(cvImpRec), mid = H / 2, o = imp.recO, y = imp.recY, n = o.length;
+  c.fillStyle = TH.screen; c.fillRect(0, 0, W, H);
+  c.lineWidth = 1; c.strokeStyle = TH.line; vline(c, W / 2, 0, H);
+  c.strokeStyle = TH.line2; hline(c, 0, W, mid);
+  let pk = 1e-6;
+  for (let i = 0; i < n; i++) pk = Math.max(pk, Math.abs(o[i]), Math.abs(y[i]));
+  const sc = mid * .82 / pk;
+  const plot = (arr) => { c.beginPath(); for (let i = 0; i < n; i++) { const px = i / (n - 1) * W, py = mid - arr[i] * sc; i ? c.lineTo(px, py) : c.moveTo(px, py); } c.stroke(); };
+  c.lineJoin = 'round';
+  c.strokeStyle = TH.trace; c.lineWidth = 2.2; plot(o);
+  c.setLineDash([6, 4]); c.strokeStyle = TH.good; c.lineWidth = 2; plot(y); c.setLineDash([]);
+  c.font = `600 11px ${TH.body}`;
+  chip(c, '원래 소리', 8, 15, TH.trace);
+  chip(c, `사인 ${imp.parts.length}개의 합`, 26 + c.measureText('원래 소리').width, 15, TH.good);
+  c.font = `10px ${TH.mono}`;
+  chip(c, imp.periodic ? '기본음 3주기' : '20 ms', W - 8, H - 7, TH.dim, 'right');
+}
+function impTick() {
+  if (imp.rec && ctx) {
+    impLevel.style.transform = `scaleX(${clamp(imp.rec.level, 0, 1)})`;
+    impRecTime.textContent = `${(imp.rec.len / ctx.sampleRate).toFixed(1)} s`;
+  }
+  if (!imp.x) return;
+  if (imp.need) analyze();
+  if (imp.src) dirty.impAll = true;
+  if (dirty.impAll) drawImpAll();
+  if (dirty.impSpec) drawImpSpec();
+  if (dirty.impRec) drawImpRec();
+}
+
+/* listening */
+const impRecipe = () => imp.parts.map(q => ({ id: null, on: true, ratio: q.r, level: q.lv, detune: 0, phase: q.ph, env: 'A' }));
+function stopImpAudio() {
+  clearTimeout(imp.toneTimer);
+  if (imp.src) {
+    const t = ctx.currentTime;
+    imp.srcGain.gain.setTargetAtTime(0, t, .01);
+    try { imp.src.stop(t + .06); } catch (_) { /* already stopped */ }
+    imp.src = null; dirty.impAll = true;
+  }
+}
+function playOriginal() {
+  if (!imp.x || !ensureAudio()) return;
+  stopImpAudio(); toneStop(imp.tone, .05);
+  if (!imp.ab) { imp.ab = ctx.createBuffer(1, imp.x.length, imp.sr); imp.ab.copyToChannel(imp.x, 0); }
+  const src = ctx.createBufferSource(), g = ctx.createGain();
+  // same loudness as the rebuilt note: its loudest sine plays at voiceNorm at the envelope peak
+  const ec = imp.env[clamp(Math.round(imp.c / imp.hop), 0, imp.env.length - 1)] / imp.P;
+  g.gain.value = voiceNorm(impRecipe()) * ec / imp.amax;
+  src.buffer = imp.ab; src.connect(g); g.connect(bus);
+  src.onended = () => { if (imp.src === src) { imp.src = null; dirty.impAll = true; } };
+  src.start();
+  Object.assign(imp, { src, srcGain: g, srcT0: ctx.currentTime });
+}
+function playRebuilt() {
+  if (!imp.parts.length || !ensureAudio()) return;
+  stopImpAudio(); toneStop(imp.tone, .05);
+  const env = imp.takeEnv ? fitEnv() : { ...state.envs.A };
+  const v = startVoice(69 + 12 * Math.log2(imp.f0 / 440), impRecipe(), { A: env, B: env }, true);
+  imp.tone.v = v;
+  imp.toneTimer = setTimeout(() => { if (imp.tone.v === v) toneStop(imp.tone, env.r); }, clamp(imp.takeEnv ? fitHold() : 1.2, .3, IMP_MAX_S) * 1000);
+}
+
+/* recording: raw samples from the microphone, nothing is sent anywhere */
+async function startRec() {
+  if (!ensureAudio()) return;
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { impNote('이 브라우저에서는 녹음할 수 없습니다. 파일 열기를 써 주세요.'); return; }
+  if (imp.asking) return;
+  panic(.05); stopImpAudio();
+  imp.asking = true;
+  impNote('마이크를 켜는 중입니다. 브라우저가 물으면 허용을 눌러 주세요.');
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }); }
+  catch (_) {
+    // an embedding page can withhold the microphone, which looks the same as a viewer saying no
+    const blocked = document.featurePolicy && !document.featurePolicy.allowsFeature('microphone');
+    impNote(blocked ? '이 화면에서는 마이크를 쓸 수 없습니다. 파일 열기나 예시 소리를 써 주세요.' : '마이크를 쓸 수 없습니다. 브라우저에서 마이크 권한을 허용했는지 확인해 주세요.');
+    return;
+  }
+  finally { imp.asking = false; }
+  const node = ctx.createMediaStreamSource(stream), proc = ctx.createScriptProcessor(4096, 1, 1), mute = ctx.createGain();
+  const rec = { stream, node, proc, mute, chunks: [], len: 0, level: 0 };
+  mute.gain.value = 0;
+  proc.onaudioprocess = (e) => {
+    const d = e.inputBuffer.getChannelData(0);
+    let m = 0;
+    for (let i = 0; i < d.length; i++) m = Math.max(m, Math.abs(d[i]));
+    rec.chunks.push(new Float32Array(d)); rec.len += d.length; rec.level = Math.max(m, rec.level * .8);
+    if (rec.len >= IMP_REC_S * ctx.sampleRate) stopRec();
+  };
+  node.connect(proc); proc.connect(mute); mute.connect(ctx.destination);
+  imp.rec = rec;
+  recUI(true);
+}
+function stopRec() {
+  const rec = imp.rec;
+  if (!rec) return;
+  imp.rec = null;
+  rec.proc.onaudioprocess = null;
+  rec.node.disconnect(); rec.proc.disconnect(); rec.mute.disconnect();
+  rec.stream.getTracks().forEach(t => t.stop());
+  recUI(false);
+  const data = new Float32Array(rec.len);
+  let o = 0;
+  for (const ch of rec.chunks) { data.set(ch, o); o += ch.length; }
+  loadSamples(data, ctx.sampleRate, '녹음한 소리');
+}
+function recUI(on) {
+  impRecBtn.setAttribute('aria-pressed', on);
+  impRecBtn.textContent = on ? '녹음 멈추기' : '녹음하기';
+  impRecBar.hidden = !on;
+  if (on) impNote('녹음 중입니다. 악기나 목소리로 한 음을 길게 내 보세요.');
+}
+
+/* to the keyboard */
+function applyImport() {
+  if (!imp.parts.length) return;
+  imp.undo = { preset: state.preset, partials: state.partials.map(({ id, ...r }) => r), envs: { A: { ...state.envs.A }, B: { ...state.envs.B } }, octave: state.octave };
+  panic(.05);
+  state.partials = imp.parts.map(q => makePartial({ ratio: q.r, level: q.lv, phase: q.ph }));
+  if (imp.takeEnv) state.envs = { A: fitEnv(), B: fitEnv() };
+  markCustom(); renderGenerators(); syncEnvUI(); save();
+  const key = Math.round(69 + 12 * Math.log2(imp.f0 / 440));
+  shiftOctave(clamp(Math.floor(key / 12) - 1, 1, 7) - state.octave);
+  impUndoBtn.hidden = false;
+  impNote(`사인 ${imp.parts.length}개를 아래 오실레이터에 올렸어요. 건반을 눌러 연주해 보세요. 원래 음높이는 ${noteName(key)} 건반입니다.`);
+}
+function undoImport() {
+  const u = imp.undo;
+  if (!u) return;
+  imp.undo = null;
+  panic(.05);
+  state.partials = u.partials.map(makePartial);
+  state.envs = u.envs;
+  state.preset = u.preset; presetSel.value = u.preset;
+  renderGenerators(); syncEnvUI(); shiftOctave(u.octave - state.octave); save();
+  impUndoBtn.hidden = true;
+  impNote('건반에 올리기 전의 소리로 되돌렸어요.');
+}
+
+$('#impFile').addEventListener('click', () => { ensureAudio(); impInput.click(); });
+impInput.addEventListener('change', () => { loadFile(impInput.files[0]); impInput.value = ''; });
+impRecBtn.addEventListener('click', () => { if (imp.rec) stopRec(); else startRec(); });
+impDemo.addEventListener('change', () => {
+  const k = impDemo.value;
+  impDemo.value = ''; impDemo.blur();
+  if (!DEMOS[k]) return;
+  const sr = ctx ? ctx.sampleRate : 48000;
+  loadSamples(demoSound(k, sr), sr, `예시: ${DEMOS[k]}`);
+});
+const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+impPanel.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); impPanel.classList.add('over'); });
+impPanel.addEventListener('dragleave', (e) => { if (!impPanel.contains(e.relatedTarget)) impPanel.classList.remove('over'); });
+impPanel.addEventListener('drop', (e) => { if (!hasFiles(e)) return; e.preventDefault(); impPanel.classList.remove('over'); loadFile(e.dataTransfer.files[0]); });
+// a file dropped beside the panel would otherwise make the browser leave the page
+window.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener('drop', (e) => { if (hasFiles(e)) e.preventDefault(); });
+const impPick = (e) => { const p = pos(e, cvImpAll); setCenter(p.x / p.W * imp.x.length); };
+cvImpAll.addEventListener('pointerdown', (e) => { if (!imp.x) return; imp.drag = true; cvImpAll.setPointerCapture(e.pointerId); impPick(e); });
+cvImpAll.addEventListener('pointermove', (e) => { if (imp.drag) impPick(e); });
+cvImpAll.addEventListener('pointerup', () => { imp.drag = false; });
+cvImpAll.addEventListener('pointercancel', () => { imp.drag = false; });
+impPos.addEventListener('input', () => {
+  const h = (imp.L - 1) >> 1;
+  paintRange(impPos);
+  setCenter(h + +impPos.value / 1000 * (imp.x.length - 1 - 2 * h), true);
+});
+impN.addEventListener('input', () => { imp.N = +impN.value; paintRange(impN); derive(); });
+impSnapBtn.addEventListener('click', () => { imp.snap = !imp.snap; impSnapBtn.setAttribute('aria-pressed', imp.snap); derive(); });
+impEnvBtn.addEventListener('click', () => { imp.takeEnv = !imp.takeEnv; impEnvBtn.setAttribute('aria-pressed', imp.takeEnv); dirty.impAll = true; });
+$('#impPlayOrig').addEventListener('click', playOriginal);
+$('#impPlaySyn').addEventListener('click', playRebuilt);
+$('#impApply').addEventListener('click', applyImport);
+impUndoBtn.addEventListener('click', undoImport);
+
 /* ---------- theme + resize ---------- */
 const mq = window.matchMedia('(prefers-color-scheme: dark)');
 if (mq.addEventListener) mq.addEventListener('change', readTheme);
 new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(markAllDirty);
 const ro = new ResizeObserver(() => { markAllDirty(); if (kb.clientWidth !== kbWidth) renderKeyboard(); });
-[cvWave, cvHarm, cvScope, cvEnv, cvEq, cvLab, cvStem, cvMis, cvTD, cvFD, cvDet1, cvDet2, cvScan, ...wcards.map(el => el.querySelector('canvas')), kb.parentElement].forEach(el => ro.observe(el));
+[cvWave, cvHarm, cvScope, cvEnv, cvEq, cvLab, cvStem, cvMis, cvTD, cvFD, cvDet1, cvDet2, cvScan, cvImpAll, cvImpSpec, cvImpRec, ...wcards.map(el => el.querySelector('canvas')), kb.parentElement].forEach(el => ro.observe(el));
 
 /* ---------- main loop ---------- */
 let prevVoices = 0;
@@ -2748,6 +3407,7 @@ function frame() {
     prevVoices = voices.length;
     if (dirty.eq || running) drawEq();
     if (dirty.scope || running) drawScope();
+    if (view === 'synth') impTick();
   }
   requestAnimationFrame(frame);
 }
