@@ -3,6 +3,13 @@
 **푸리에 변환**을 배우고, 사인파를 쌓아 나만의 소리를 만드는 웹 실험실입니다.
 설치나 빌드 없이 브라우저에서 바로 실행됩니다.
 
+## 소개 영상
+
+[![Fourier Garden 소개 영상 (78초)](media/intro-poster.jpg)](https://runedaeg.github.io/fourier-garden/media/fourier-garden-intro.mp4)
+
+78초 동안 1단계 ‘푸리에 변환이란?’부터 숨은 사인 찾기, 사각파 쌓기, 미션, 4단계 소리 가져오기와 건반 연주까지 차례로 보여 줍니다.
+한국어 내레이션과 자막이 들어 있습니다. [▶ 영상 보기 (MP4, 11 MB)](https://runedaeg.github.io/fourier-garden/media/fourier-garden-intro.mp4)
+
 ## 학습 순서
 
 접속하면 언제나 1단계의 ‘푸리에 변환이란?’부터 열립니다. 다시 들어온 경우에는 ‘이어서 하기’ 버튼으로 마지막에 보던 단계로 바로 갈 수 있습니다.
