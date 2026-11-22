@@ -160,7 +160,7 @@ input[type="range"]:disabled{opacity:.35;cursor:not-allowed}
 /* generators */
 .ghead,.grow{display:grid;grid-template-columns:28px 104px minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) 60px 24px;gap:8px;align-items:center}
 .ghead{font-size:11px;color:var(--muted);padding:0 2px}
-.glist{display:flex;flex-direction:column;gap:2px}
+.glist{display:flex;flex-direction:column;gap:2px;max-height:min(620px,75vh);overflow-y:auto;scrollbar-width:thin}
 .grow{padding:4px 2px;--accent:hsl(var(--h) 66% var(--swatch-l))}
 .grow.off .cell,.grow.off .ratio{opacity:.4}
 .sw{width:28px;height:28px;border-radius:50%;border:2px solid hsl(var(--h) 66% var(--swatch-l));background:hsl(var(--h) 66% var(--swatch-l));color:var(--swatch-ink);font:600 12px var(--f-mono);cursor:pointer;display:grid;place-items:center;padding:0}
@@ -320,6 +320,12 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
 .chap-t > p{margin:0;line-height:1.75;text-wrap:pretty}
 .chap-t b{font-weight:600}
 .chap-v{display:flex;flex-direction:column;gap:10px;min-width:0}
+#cvWhat{height:250px}
+#cvWhatSp{height:120px}
+.ftarrow{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 16px;padding:0 4px;font:600 12.5px var(--f-body);color:var(--accent)}
+.roadmap{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:3px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.roadmap b{color:var(--ink);font-weight:600;margin-right:6px}
+.intro .resume{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:6px;padding:8px 10px 8px 14px;width:fit-content;max-width:100%;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:13.5px;line-height:1.5}
 #cvTD{height:150px}
 #cvFD{height:160px;touch-action:none;cursor:ns-resize}
 #cvDet1,#cvDet2{height:112px}
@@ -443,11 +449,45 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
   <section class="intro v-learn" aria-labelledby="h-learn">
     <span class="eyebrow">STEP 1 / 4</span>
     <h2 id="h-learn">푸리에 변환: 소리를 사인파로 쪼개기</h2>
-    <p>1807년 프랑스의 수학자 조제프 푸리에는 열이 퍼지는 현상을 연구하다가, 일정하게 반복되는 신호는 모두 사인파를 더해 만들 수 있다고 주장했습니다. 거꾸로, 복잡한 소리 속에 어떤 사인파가 얼마나 들어 있는지 찾아내는 계산이 푸리에 변환입니다. 이 단계에서는 소리를 두 가지 방법으로 보고, 푸리에 변환이 사인을 찾아내는 원리를 직접 돌려 봅니다.</p>
+    <p>1807년 프랑스의 수학자 조제프 푸리에는 열이 퍼지는 현상을 연구하다가, 일정하게 반복되는 신호는 모두 사인파를 더해 만들 수 있다고 주장했습니다. 거꾸로, 복잡한 소리 속에 어떤 사인파가 얼마나 들어 있는지 찾아내는 계산이 푸리에 변환입니다. 이 단계에서는 푸리에 변환이 무엇인지 한눈에 본 다음, 소리를 두 가지 방법으로 보고, 푸리에 변환이 사인을 찾아내는 원리를 직접 돌려 봅니다.</p>
+    <p class="resume" id="resume" hidden><span id="resumeText"></span><button id="resumeBtn" class="btn" type="button">이어서 하기 →</button></p>
+  </section>
+
+  <section class="panel p-learn v-learn" aria-labelledby="h-what">
+    <div class="ph"><h2 id="h-what">What is it <span>1-1 · 푸리에 변환이란?</span></h2></div>
+    <div class="chap">
+      <div class="chap-t">
+        <p class="lead"><b>푸리에 변환</b>은 복잡한 파형을 ‘어떤 높이의 사인파가 얼마만큼 들어 있는지’로 바꾸는 계산입니다.</p>
+        <p>프리즘이 햇빛을 무지개색으로 나누듯, 푸리에 변환은 소리를 높이(주파수)가 다른 순수한 사인파들로 나눕니다. 나눈 결과를 주파수마다 막대 하나로 그린 그래프가 <b>스펙트럼</b>입니다.</p>
+        <p>거꾸로, 스펙트럼에 적힌 사인들을 다시 더하면 원래 파형이 돌아옵니다. 이 계산이 <b>푸리에 역변환</b>이고, 소리를 만들 때는 <b>합성</b>이라고 부릅니다.</p>
+        <p>오른쪽 맨 위의 파형은 복잡해 보이지만 사인파 세 개를 더한 것입니다. ‘하나씩 듣기’를 눌러 세 사인을 차례로 듣고, 마지막에 그 합을 들어 보세요.</p>
+        <ol class="roadmap">
+          <li><b>1단계</b>푸리에 변환이 사인을 찾아내는 원리</li>
+          <li><b>2단계</b>사각파·삼각파·톱니파를 사인으로 쌓기</li>
+          <li><b>3단계</b>소리를 듣고 사인 조합 맞히기</li>
+          <li><b>4단계</b>나만의 소리 만들기, 녹음한 소리 분석하기</li>
+        </ol>
+      </div>
+      <div class="chap-v">
+        <div class="pblock">
+          <div class="plab"><b>시간 영역 · 파형은 사인의 합</b><span>맨 위가 실제 소리, 아래가 그 속의 사인 세 개</span></div>
+          <canvas id="cvWhat" class="screen" role="img" aria-label="복잡한 파형 하나와, 더하면 그 파형이 되는 사인파 세 개"></canvas>
+        </div>
+        <div class="ftarrow" aria-hidden="true"><span>↓ 푸리에 변환: 사인으로 나누기</span><span>↑ 푸리에 역변환: 사인을 더하기</span></div>
+        <div class="pblock">
+          <div class="plab"><b>주파수 영역 · 스펙트럼</b><span>막대 하나가 사인 하나</span></div>
+          <canvas id="cvWhatSp" class="screen" role="img" aria-label="세 사인의 주파수와 크기를 막대로 나타낸 스펙트럼"></canvas>
+        </div>
+        <div class="labactions">
+          <button id="whatSeq" class="btn primary" type="button">하나씩 듣기</button>
+          <button id="whatAll" class="btn" type="button">합친 소리 듣기</button>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="panel p-learn v-learn" aria-labelledby="h-two">
-    <div class="ph"><h2 id="h-two">Two Views <span>1-1 · 소리를 보는 두 가지 방법</span></h2></div>
+    <div class="ph"><h2 id="h-two">Two Views <span>1-2 · 소리를 보는 두 가지 방법</span></h2></div>
     <div class="chap">
       <div class="chap-t">
         <p class="lead">소리는 공기의 압력이 빠르게 오르내리는 떨림입니다. 마이크로 재서 시간에 따라 그리면 <b>파형</b>이 됩니다. 이것이 <b>시간 영역</b>에서 본 소리입니다.</p>
@@ -476,7 +516,7 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
   </section>
 
   <section class="panel p-learn v-learn" aria-labelledby="h-ft">
-    <div class="ph"><h2 id="h-ft">Fourier Transform <span>1-2 · 숨은 사인 찾아내기</span></h2></div>
+    <div class="ph"><h2 id="h-ft">Fourier Transform <span>1-3 · 숨은 사인 찾아내기</span></h2></div>
     <div class="chap">
       <div class="chap-t">
         <p class="lead">오른쪽 수수께끼 소리에는 사인파 몇 개가 섞여 있습니다. 푸리에 변환은 세 단계로 그 사인들을 찾아냅니다.</p>
@@ -547,7 +587,7 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
   </section>
 
   <section class="panel p-learn v-learn" aria-labelledby="h-more">
-    <div class="ph"><h2 id="h-more">Beyond <span>1-3 · 푸리에 변환은 어디에 쓰일까</span></h2></div>
+    <div class="ph"><h2 id="h-more">Beyond <span>1-4 · 푸리에 변환은 어디에 쓰일까</span></h2></div>
     <div class="facts">
       <article class="fact">
         <h3>거꾸로 하면 합성</h3>
@@ -617,7 +657,7 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
         <div class="pblock">
           <div class="plab"><b>③ 푸리에 역변환 · 사인 다시 더하기</b><span>흰 선 원래 소리 · 초록 점선 사인의 합</span></div>
           <canvas id="cvImpRec" class="screen" role="img" aria-label="원래 파형과 찾은 사인을 더한 파형 비교"></canvas>
-          <label class="knob" for="impN"><span class="kt"><span>다시 더할 사인 개수 (센 것부터)</span><output id="impNOut"></output></span><input id="impN" type="range" min="1" max="16" step="1" value="16"></label>
+          <label class="knob" for="impN"><span class="kt"><span>다시 더할 사인 개수 (센 것부터)</span><output id="impNOut"></output></span><input id="impN" type="range" min="1" max="32" step="1" value="32"></label>
         </div>
       </div>
       <div class="detread" aria-live="polite">
@@ -639,7 +679,7 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
   <section class="panel p-gen" aria-labelledby="h-gen">
     <div class="ph">
       <h2 id="h-gen">Generators <span>사인 오실레이터</span></h2>
-      <span class="pill" id="gCount">8 / 16</span>
+      <span class="pill" id="gCount">8 / 32</span>
     </div>
     <div class="ghead" aria-hidden="true"><span></span><span>배율 (× 음높이)</span><span>레벨</span><span>디튠</span><span>위상</span><span>Env</span><span></span></div>
     <div class="glist" id="genList"></div>
@@ -926,7 +966,7 @@ math{font-size:1.25em;font-family:"STIX Two Math","Cambria Math","Latin Modern M
 const $ = (s) => document.querySelector(s);
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const TAU = Math.PI * 2;
-const MAX_P = 16;
+const MAX_P = 32;
 const ENV_MAX = { a: 5, d: 8, r: 10 };
 const T_MIN = 0.001;
 const EQ_MIN = 20, EQ_MAX = 20000, EQ_DB = 18, Q_MIN = 0.1, Q_MAX = 18;
@@ -993,7 +1033,7 @@ const screenColor = (i) => `hsl(${hueOf(i)} 80% 68%)`;
 
 const state = { preset: 'saw', partials: [], envs: null, eq: DEFAULT_EQ(), eqBypass: false, band: 3, envTab: 'A', master: 80, octave: 4, hold: false };
 const lab = { shape: 'square', N: 5, phases: null, drone: false, demo: 0, demoEnd: 0 };
-const dirty = { wave: true, harm: true, env: true, eq: true, resp: true, scope: true, lab: true, stem: true, cards: true, td: true, fd: true, det: true, scan: true, impAll: true, impSpec: true, impRec: true };
+const dirty = { wave: true, harm: true, env: true, eq: true, resp: true, scope: true, lab: true, stem: true, cards: true, what: true, td: true, fd: true, det: true, scan: true, impAll: true, impSpec: true, impRec: true };
 const markAllDirty = () => { for (const k in dirty) dirty[k] = true; };
 let view = 'learn';
 
@@ -1967,6 +2007,72 @@ function playOnce(parts) {
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const go = (el) => el.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
 
+/* ---------- step 1: what the transform is ---------- */
+// one sound and the three sines that add up to it, stacked like an equation, with their spectrum below
+const WHAT = [[1, 1], [3, .5], [5, .3]];
+const what = { hot: -1, timers: [] };
+const cvWhat = $('#cvWhat'), cvWhatSp = $('#cvWhatSp');
+const whatSum = (t) => WHAT.reduce((s, [r, a]) => s + a * Math.sin(TAU * r * t), 0);
+const WHAT_PEAK = Math.max(...Array.from({ length: 400 }, (_, j) => Math.abs(whatSum(j / 400))));
+const whatParts = (only) => recipe(WHAT.map(([r, a], i) => [r, a, 0, only === undefined || only === i]));
+function drawWhat() {
+  dirty.what = false;
+  // the waves drift slowly so they read as time passing
+  const drift = reduceMotion ? 0 : performance.now() / 1000 * .12, lit = (k) => what.hot < 0 || what.hot === k || what.hot === 3;
+  {
+    const { c, W, H } = setupCanvas(cvWhat), G = 30, gap = 8, x0 = G, w = W - G - 8;
+    const hSum = H * .34, hRow = (H - hSum - gap * 3) / 3, N = Math.max(200, Math.round(w));
+    c.fillStyle = TH.screen; c.fillRect(0, 0, W, H);
+    for (let k = 0; k <= 3; k++) {
+      const y0 = k ? hSum + gap + (k - 1) * (hRow + gap) : 0, h = k ? hRow : hSum, mid = y0 + h / 2 + 3;
+      const f = k ? (t) => WHAT[k - 1][1] * Math.sin(TAU * WHAT[k - 1][0] * t) : whatSum, sc = (h / 2 - 4) * .78 / (k ? 1 : WHAT_PEAK);
+      c.lineWidth = 1; c.strokeStyle = TH.line2; hline(c, x0, x0 + w, mid);
+      c.beginPath();
+      for (let j = 0; j <= N; j++) { const x = x0 + j / N * w, y = mid - f(2 * j / N + drift) * sc; j ? c.lineTo(x, y) : c.moveTo(x, y); }
+      c.globalAlpha = (k ? lit(k - 1) : what.hot < 0 || what.hot === 3) ? 1 : .28;
+      c.strokeStyle = k ? screenColor(k - 1) : TH.trace; c.lineWidth = k ? 2 : 2.4; c.lineJoin = 'round'; c.stroke();
+      c.globalAlpha = 1;
+      // x(t) = sine 1 + sine 2 + sine 3, read down the left edge
+      c.font = `600 16px ${TH.mono}`; c.fillStyle = TH.dim; c.textAlign = 'center';
+      if (k) c.fillText(k === 1 ? '=' : '+', G / 2, mid + 5);
+      c.font = `600 11px ${TH.body}`;
+      if (k) { const [r, a] = WHAT[k - 1]; chip(c, `사인 ${k} · ${Math.round(F0 * r)} Hz · 크기 ${a}`, x0 + 6, y0 + 13, screenColor(k - 1)); }
+      else chip(c, '소리 x(t)', x0 + 6, y0 + 14, TH.trace);
+      if (k < 3) { c.strokeStyle = TH.line; c.lineWidth = 1; hline(c, 0, W, y0 + h + gap / 2); }
+    }
+  }
+  {
+    const { c, W, H } = setupCanvas(cvWhatSp), L = 34, R = 14, Tp = 12, B = 22, w = W - L - R, h = H - Tp - B, K = 6;
+    const X = (k) => L + k / (K + .5) * w, Y = (v) => Tp + (1 - v) * h;
+    c.fillStyle = TH.screen; c.fillRect(0, 0, W, H);
+    c.lineWidth = 1; c.strokeStyle = TH.line; hline(c, L, L + w, Y(1)); hline(c, L, L + w, Y(.5));
+    c.strokeStyle = TH.line2; hline(c, L, L + w, Y(0));
+    c.font = `10px ${TH.mono}`; c.fillStyle = TH.dim; c.textAlign = 'right';
+    c.fillText('1', L - 6, Y(1) + 3); c.fillText('0', L - 6, Y(0) + 3); c.fillText('Hz', L - 6, H - 6);
+    c.textAlign = 'center';
+    for (let k = 1; k <= K; k++) c.fillText(String(Math.round(F0 * k)), X(k), H - 6);
+    const bw = clamp(w / K * .32, 8, 18);
+    WHAT.forEach(([r, a], i) => {
+      c.globalAlpha = lit(i) ? 1 : .28; c.fillStyle = screenColor(i);
+      c.fillRect(X(r) - bw / 2, Y(a), bw, Y(0) - Y(a));
+    });
+    c.globalAlpha = 1;
+  }
+}
+function stopWhat() { what.timers.forEach(clearTimeout); what.timers = []; if (what.hot !== -1) { what.hot = -1; dirty.what = true; } }
+function whatPlay(k) { what.hot = k; dirty.what = true; playOnce(whatParts(k < 3 ? k : undefined)); }
+$('#whatSeq').addEventListener('click', () => {
+  if (!ensureAudio()) return;
+  stopWhat();
+  [0, 1, 2, 3].forEach((k, j) => what.timers.push(setTimeout(() => whatPlay(k), j * 1600)));
+  what.timers.push(setTimeout(stopWhat, 4 * 1600));
+});
+$('#whatAll').addEventListener('click', () => {
+  if (!ensureAudio()) return;
+  stopWhat(); whatPlay(3);
+  what.timers.push(setTimeout(stopWhat, 1600));
+});
+
 /* ---------- step 1: two views of one sound ---------- */
 const FD_N = 8, F0 = 261.63;
 const learn = { amps: [1, 0, 0, 0, 0, 0, 0, 0], hot: -1, drag: false, listen: false, tone: makeTone() };
@@ -2430,7 +2536,7 @@ function startDemo() {
   demoBtn.setAttribute('aria-pressed', 'true'); demoBtn.textContent = '쌓기 멈추기';
 }
 // panic() has already released every voice; this resets the lesson buttons that were holding one
-function quietLessons() { for (const t of tones) t.v = null; stopDemo(); setDroneUI(false); setListenUI(false); stopImpAudio(); }
+function quietLessons() { for (const t of tones) t.v = null; stopDemo(); setDroneUI(false); setListenUI(false); stopImpAudio(); stopWhat(); }
 
 wcards.forEach(el => {
   el.querySelector('.wsel').addEventListener('click', () => setShape(el.dataset.shape));
@@ -3381,7 +3487,7 @@ if (mq.addEventListener) mq.addEventListener('change', readTheme);
 new MutationObserver(readTheme).observe(root, { attributes: true, attributeFilter: ['data-theme', 'class', 'style'] });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(markAllDirty);
 const ro = new ResizeObserver(() => { markAllDirty(); if (kb.clientWidth !== kbWidth) renderKeyboard(); });
-[cvWave, cvHarm, cvScope, cvEnv, cvEq, cvLab, cvStem, cvMis, cvTD, cvFD, cvDet1, cvDet2, cvScan, cvImpAll, cvImpSpec, cvImpRec, ...wcards.map(el => el.querySelector('canvas')), kb.parentElement].forEach(el => ro.observe(el));
+[cvWave, cvHarm, cvScope, cvEnv, cvEq, cvLab, cvStem, cvMis, cvWhat, cvWhatSp, cvTD, cvFD, cvDet1, cvDet2, cvScan, cvImpAll, cvImpSpec, cvImpRec, ...wcards.map(el => el.querySelector('canvas')), kb.parentElement].forEach(el => ro.observe(el));
 
 /* ---------- main loop ---------- */
 let prevVoices = 0;
@@ -3390,6 +3496,7 @@ function frame() {
   const running = ctx && ctx.state === 'running';
   if (view === 'learn') {
     if (det.scanning) stepScan();
+    if (dirty.what || !reduceMotion) drawWhat();
     if (dirty.td) drawTD();
     if (dirty.fd) drawFD();
     if (dirty.det) drawDet();
@@ -3430,8 +3537,16 @@ mission.idx = Math.max(0, MISSIONS.findIndex(m => !recOf(m).done));
 renderMissionList();
 renderMissionDetail();
 requestAnimationFrame(frame);
-// first visit starts at step 1; later visits return to the last step (a link's #hash wins)
-setView({ '#learn': 'learn', '#waves': 'waves', '#fourier': 'waves', '#missions': 'mission', '#studio': 'synth' }[location.hash] || flow.view || 'learn', true);
+// every visit opens on step 1, where the Fourier transform is introduced (a link's #hash opens its own step);
+// a returning visitor gets a button back to the step they were on
+const linked = { '#learn': 'learn', '#waves': 'waves', '#fourier': 'waves', '#missions': 'mission', '#studio': 'synth' }[location.hash], last = flow.view;
+setView(linked || 'learn', true);
+flow.view = view; saveFlow();
+if (!linked && last && last !== 'learn') {
+  $('#resumeText').textContent = `지난번에는 ${{ waves: '2단계 사각·삼각·톱니파', mission: '3단계 소리 맞히기 미션', synth: '4단계 나만의 소리' }[last]}까지 봤어요.`;
+  $('#resume').hidden = false;
+  $('#resumeBtn').addEventListener('click', () => { $('#resume').hidden = true; setView(last); });
+}
 })();
 </script>
 </body>
